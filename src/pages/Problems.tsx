@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { Plus, Trash2, ExternalLink, Star, RotateCcw, CheckCircle } from 'lucide-react'
+import { Plus, Trash2, ExternalLink, Star, RotateCcw, CircleCheck, Search } from 'lucide-react'
 import { useApp } from '../store/AppContext'
 import type { Problem, ProblemStatus, Difficulty } from '../types'
 import { PLATFORMS, REVISION_INTERVALS } from '../data/defaults'
-import { generateId, getTodayString, difficultyEmoji, statusLabel, difficultyLabel } from '../lib/utils'
+import { generateId, getTodayString, statusLabel, difficultyLabel } from '../lib/utils'
 import { Card } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input, Select, Textarea } from '../components/ui/Input'
 import { Modal } from '../components/ui/Modal'
 import { Badge } from '../components/ui/Badge'
+import { EmptyState } from '../components/ui/EmptyState'
+import { PageHeader } from '../components/ui/PageHeader'
 
 const STATUSES: ProblemStatus[] = ['not-started', 'in-progress', 'solved', 'revised']
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard']
@@ -21,6 +23,13 @@ const emptyProblem = (): Omit<Problem, 'id'> => ({
   status: 'not-started',
   revisionStatus: null,
 })
+
+const STATUS_DOT: Record<ProblemStatus, string> = {
+  'not-started': 'bg-ink-3/40',
+  'in-progress': 'bg-amber',
+  'solved': 'bg-mint',
+  'revised': 'bg-accent',
+}
 
 export function ProblemsPage() {
   const { state, addProblem, updateProblem, deleteProblem, setRevision } = useApp()
@@ -42,6 +51,10 @@ export function ProblemsPage() {
     if (filterStatus !== 'all' && p.status !== filterStatus) return false
     return true
   })
+
+  const solvedCount = state.problems.filter(p => p.status === 'solved' || p.status === 'revised').length
+  const inProgressCount = state.problems.filter(p => p.status === 'in-progress').length
+  const masteredCount = state.problems.filter(p => p.revisionStatus === 'mastered').length
 
   const openAdd = () => {
     setForm(emptyProblem())
@@ -80,19 +93,36 @@ export function ProblemsPage() {
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Problem Tracker</h1>
-          <p className="text-[var(--color-text-secondary)] mt-1">{state.problems.length} problems tracked</p>
-        </div>
-        <Button onClick={openAdd}>
-          <Plus size={16} /> Add Problem
-        </Button>
-      </div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="Log"
+        title="Problem Tracker"
+        description={`${state.problems.length} problem${state.problems.length === 1 ? '' : 's'} tracked`}
+        actions={
+          <Button onClick={openAdd}>
+            <Plus size={16} /> Add Problem
+          </Button>
+        }
+      />
 
-      <Card className="!p-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {state.problems.length > 0 && (
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {[
+            { label: 'Tracked', value: state.problems.length },
+            { label: 'Solved', value: solvedCount },
+            { label: 'In progress', value: inProgressCount },
+            { label: 'Mastered', value: masteredCount },
+          ].map(s => (
+            <Card key={s.label} className="p-4">
+              <p className="text-[12px] font-medium text-ink-3">{s.label}</p>
+              <p className="mt-1 text-xl font-bold tracking-[-0.02em] text-ink tabular">{s.value}</p>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <Card className="p-4">
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <Select label="Topic" value={filterTopic} onChange={e => setFilterTopic(e.target.value)}
             options={[{ value: 'all', label: 'All Topics' }, ...topicOptions]} />
           <Select label="Difficulty" value={filterDifficulty} onChange={e => setFilterDifficulty(e.target.value)}
@@ -105,48 +135,86 @@ export function ProblemsPage() {
       </Card>
 
       {filtered.length === 0 ? (
-        <Card className="text-center py-12">
-          <p className="text-[var(--color-text-muted)]">No problems found. Add your first problem to get started!</p>
+        <Card>
+          <EmptyState
+            icon={Search}
+            title={state.problems.length === 0 ? 'No problems yet' : 'No problems match your filters'}
+            body={
+              state.problems.length === 0
+                ? 'Add your first problem to start building a searchable, revisable log.'
+                : 'Try clearing a filter, or add the problem you were looking for.'
+            }
+            action={state.problems.length === 0 ? { label: 'Add Problem', onClick: openAdd } : undefined}
+          />
         </Card>
       ) : (
-        <div className="space-y-3">
+        <div className="stagger space-y-3">
           {filtered.map(problem => {
             const topic = state.categories.find(c => c.id === problem.topicId)
             return (
-              <Card key={problem.id} hover className="!p-4" onClick={() => openEdit(problem)}>
+              <Card
+                key={problem.id}
+                hover
+                className="card-hover p-4"
+                onClick={() => openEdit(problem)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    openEdit(problem)
+                  }
+                }}
+                aria-label={`Edit ${problem.name}`}
+              >
                 <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-semibold text-[var(--color-text-primary)]">{problem.name}</h3>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${STATUS_DOT[problem.status]}`} aria-hidden />
+                      <h3 className="min-w-0 truncate text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+                        {problem.name}
+                      </h3>
                       {statusBadge(problem.status)}
-                      {problem.revisionStatus === 'important' && <Star size={14} className="text-yellow-500 fill-yellow-500" />}
-                      {problem.revisionStatus === 'needs-revision' && <RotateCcw size={14} className="text-orange-500" />}
-                      {problem.revisionStatus === 'mastered' && <CheckCircle size={14} className="text-green-500" />}
+                      {problem.revisionStatus === 'important' && (
+                        <Star size={14} className="fill-amber text-amber" aria-label="Important" />
+                      )}
+                      {problem.revisionStatus === 'needs-revision' && (
+                        <RotateCcw size={14} className="text-sky" aria-label="Needs revision" />
+                      )}
+                      {problem.revisionStatus === 'mastered' && (
+                        <CircleCheck size={14} className="text-mint" aria-label="Mastered" />
+                      )}
                     </div>
-                    <div className="flex flex-wrap gap-3 mt-1.5 text-sm text-[var(--color-text-secondary)]">
-                      <span>{difficultyEmoji(problem.difficulty)} {difficultyLabel(problem.difficulty)}</span>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12.5px] text-ink-3">
+                      <span>{difficultyLabel(problem.difficulty)}</span>
                       <span>{topic?.icon} {topic?.name ?? problem.topicId}</span>
                       <span>{problem.platform}</span>
-                      {problem.dateSolved && <span>Solved: {problem.dateSolved}</span>}
-                      {problem.timeTakenMinutes && <span>{problem.timeTakenMinutes} min</span>}
+                      {problem.dateSolved && <span className="tabular">Solved {problem.dateSolved}</span>}
+                      {problem.timeTakenMinutes != null && <span className="tabular">{problem.timeTakenMinutes} min</span>}
                     </div>
                     {problem.notes && (
-                      <p className="mt-1 text-sm text-[var(--color-text-muted)] italic truncate">{problem.notes}</p>
+                      <p className="mt-1 truncate text-[12.5px] italic text-ink-3">{problem.notes}</p>
                     )}
                   </div>
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="flex shrink-0 items-center gap-1">
                     {problem.url && (
-                      <a href={problem.url} target="_blank" rel="noopener noreferrer"
+                      <a
+                        href={problem.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onClick={e => e.stopPropagation()}
-                        className="p-2 rounded-lg hover:bg-[var(--color-surface-hover)] text-[var(--color-text-muted)]">
-                        <ExternalLink size={16} />
+                        aria-label="Open problem link"
+                        className="grid h-8 w-8 place-items-center rounded-[10px] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+                      >
+                        <ExternalLink size={15} />
                       </a>
                     )}
                     <button
                       onClick={e => { e.stopPropagation(); deleteProblem(problem.id) }}
-                      className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-red-500"
+                      aria-label={`Delete ${problem.name}`}
+                      className="grid h-8 w-8 place-items-center rounded-[10px] text-ink-3 transition-colors hover:bg-rose/10 hover:text-rose"
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={15} />
                     </button>
                   </div>
                 </div>
@@ -178,24 +246,24 @@ export function ProblemsPage() {
 
           {editingId && (
             <div>
-              <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Revision</label>
-              <div className="flex flex-wrap gap-2 mb-3">
+              <label className="mb-2 block text-[13px] font-medium text-ink-2">Revision</label>
+              <div className="mb-3 flex flex-wrap gap-2">
                 <Button size="sm" variant={form.revisionStatus === 'important' ? 'primary' : 'secondary'}
                   onClick={() => setRevision(editingId, 'important')}>
-                  ⭐ Important
+                  <Star size={13} className={form.revisionStatus === 'important' ? 'fill-current' : ''} /> Important
                 </Button>
                 <Button size="sm" variant={form.revisionStatus === 'needs-revision' ? 'primary' : 'secondary'}
                   onClick={() => setRevision(editingId, 'needs-revision')}>
-                  🔄 Needs Revision
+                  <RotateCcw size={13} /> Needs Revision
                 </Button>
                 <Button size="sm" variant={form.revisionStatus === 'mastered' ? 'primary' : 'secondary'}
                   onClick={() => setRevision(editingId, 'mastered')}>
-                  ✅ Mastered
+                  <CircleCheck size={13} /> Mastered
                 </Button>
               </div>
               <div className="flex flex-wrap gap-2">
                 {REVISION_INTERVALS.map(interval => (
-                  <Button key={interval.value} size="sm" variant="ghost"
+                  <Button key={interval.value} size="sm" variant="ghost" className="h-8"
                     onClick={() => setRevision(editingId, form.revisionStatus ?? 'needs-revision', interval.value)}>
                     {interval.label}
                   </Button>

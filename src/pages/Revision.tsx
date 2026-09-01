@@ -1,11 +1,20 @@
-import { Star, RotateCcw, CheckCircle, ExternalLink } from 'lucide-react'
+import { Star, RotateCcw, CircleCheck, ExternalLink } from 'lucide-react'
 import { useApp } from '../store/AppContext'
 import { getRevisionDueProblems } from '../lib/analytics'
 import { REVISION_INTERVALS } from '../data/defaults'
-import { difficultyEmoji, difficultyLabel, formatDisplayDate } from '../lib/utils'
-import { Card, CardHeader, CardTitle } from '../components/ui/Card'
+import { difficultyLabel, formatDisplayDate, cn } from '../lib/utils'
+import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
+import { StatTile } from '../components/ui/StatTile'
+import { EmptyState } from '../components/ui/EmptyState'
+import { PageHeader } from '../components/ui/PageHeader'
+
+const DIFFICULTY_DOT: Record<string, string> = {
+  easy: 'bg-mint',
+  medium: 'bg-amber',
+  hard: 'bg-rose',
+}
 
 export function RevisionPage() {
   const { state, setRevision, updateProblem } = useApp()
@@ -18,44 +27,68 @@ export function RevisionPage() {
   const renderProblem = (problem: typeof state.problems[0], showActions = true) => {
     const topic = state.categories.find(c => c.id === problem.topicId)
     return (
-      <Card key={problem.id} className="!p-4">
+      <Card key={problem.id} className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-semibold text-[var(--color-text-primary)]">{problem.name}</h3>
-              {problem.revisionStatus === 'important' && <Star size={14} className="text-yellow-500 fill-yellow-500" />}
-              {problem.revisionStatus === 'needs-revision' && <RotateCcw size={14} className="text-orange-500" />}
-              {problem.revisionStatus === 'mastered' && <CheckCircle size={14} className="text-green-500" />}
-            </div>
-            <div className="flex flex-wrap gap-2 mt-1 text-sm text-[var(--color-text-secondary)]">
-              <span>{difficultyEmoji(problem.difficulty)} {difficultyLabel(problem.difficulty)}</span>
-              <span>{topic?.icon} {topic?.name}</span>
-              {problem.revisionDate && (
-                <Badge variant="warning">Due: {formatDisplayDate(problem.revisionDate)}</Badge>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">{problem.name}</h3>
+              {problem.revisionStatus === 'important' && (
+                <Star size={14} className="fill-amber text-amber" aria-label="Important" />
+              )}
+              {problem.revisionStatus === 'needs-revision' && (
+                <RotateCcw size={14} className="text-sky" aria-label="Needs revision" />
+              )}
+              {problem.revisionStatus === 'mastered' && (
+                <CircleCheck size={14} className="text-mint" aria-label="Mastered" />
               )}
             </div>
-            {problem.notes && <p className="mt-2 text-sm text-[var(--color-text-muted)]">{problem.notes}</p>}
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px] text-ink-3">
+              <span className="flex items-center gap-1.5">
+                <span className={cn('h-2 w-2 rounded-full', DIFFICULTY_DOT[problem.difficulty])} />
+                {difficultyLabel(problem.difficulty)}
+              </span>
+              {topic && (
+                <span>
+                  {topic.icon} {topic.name}
+                </span>
+              )}
+              {problem.revisionDate && (
+                <Badge variant="warning">Due {formatDisplayDate(problem.revisionDate)}</Badge>
+              )}
+            </div>
+            {problem.notes && <p className="mt-2 text-[13px] text-ink-2">{problem.notes}</p>}
           </div>
           {showActions && (
-            <div className="flex flex-col gap-1 shrink-0">
+            <div className="flex shrink-0 flex-col items-stretch gap-1.5">
               <Button size="sm" variant="secondary" onClick={() => updateProblem(problem.id, { status: 'revised' })}>
-                Mark Revised
+                Mark revised
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setRevision(problem.id, 'mastered')}>
-                ✅ Mastered
+                Mastered
               </Button>
               {problem.url && (
-                <a href={problem.url} target="_blank" rel="noopener noreferrer">
-                  <Button size="sm" variant="ghost"><ExternalLink size={14} /></Button>
+                <a
+                  href={problem.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="grid h-8 place-items-center rounded-[10px] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
+                  aria-label="Open problem link"
+                >
+                  <ExternalLink size={14} />
                 </a>
               )}
             </div>
           )}
         </div>
-        <div className="flex flex-wrap gap-1 mt-3">
+        <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
           {REVISION_INTERVALS.map(interval => (
-            <Button key={interval.value} size="sm" variant="ghost"
-              onClick={() => setRevision(problem.id, problem.revisionStatus ?? 'needs-revision', interval.value)}>
+            <Button
+              key={interval.value}
+              size="sm"
+              variant="ghost"
+              className="h-7 px-2.5 text-[12px]"
+              onClick={() => setRevision(problem.id, problem.revisionStatus ?? 'needs-revision', interval.value)}
+            >
               {interval.label}
             </Button>
           ))}
@@ -64,40 +97,35 @@ export function RevisionPage() {
     )
   }
 
-  return (
-    <div className="space-y-8 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Revision Queue</h1>
-        <p className="text-[var(--color-text-secondary)] mt-1">
-          Revisit problems to strengthen your understanding
-        </p>
-      </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="text-center py-4">
-          <Star className="w-6 h-6 text-yellow-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold">{important.length}</p>
-          <p className="text-xs text-[var(--color-text-muted)]">Important</p>
-        </Card>
-        <Card className="text-center py-4">
-          <RotateCcw className="w-6 h-6 text-orange-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold">{needsRevision.length}</p>
-          <p className="text-xs text-[var(--color-text-muted)]">Needs Revision</p>
-        </Card>
-        <Card className="text-center py-4">
-          <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-1" />
-          <p className="text-2xl font-bold">{mastered.length}</p>
-          <p className="text-xs text-[var(--color-text-muted)]">Mastered</p>
-        </Card>
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Spaced repetition"
+        title="Revision Queue"
+        description="Revisit problems to strengthen your understanding"
+      />
+
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <StatTile icon={Star} tone="amber" label="Important" value={important.length} sub="Flagged for keeps" />
+        <StatTile icon={RotateCcw} tone="sky" label="Needs revision" value={needsRevision.length} sub="In the loop" />
+        <StatTile icon={CircleCheck} tone="mint" label="Mastered" value={mastered.length} sub="Locked in" />
       </div>
 
       <section>
         <CardHeader>
-          <CardTitle>🔄 Due for Revision ({dueProblems.length})</CardTitle>
+          <div>
+            <CardTitle>Due for revision</CardTitle>
+            <CardDescription>{dueProblems.length} problem{dueProblems.length === 1 ? '' : 's'} scheduled</CardDescription>
+          </div>
         </CardHeader>
         {dueProblems.length === 0 ? (
-          <Card className="text-center py-8">
-            <p className="text-[var(--color-text-muted)]">No problems due for revision. Great job!</p>
+          <Card>
+            <EmptyState
+              icon={CircleCheck}
+              title="Queue is clear"
+              body="No problems are due right now. Keep the streak going — new revisions will surface here on schedule."
+            />
           </Card>
         ) : (
           <div className="space-y-3">{dueProblems.map(p => renderProblem(p))}</div>
@@ -106,14 +134,24 @@ export function RevisionPage() {
 
       {important.length > 0 && (
         <section>
-          <CardHeader><CardTitle>⭐ Important ({important.length})</CardTitle></CardHeader>
+          <CardHeader>
+            <div>
+              <CardTitle>Important</CardTitle>
+              <CardDescription>Your starred, must-know problems</CardDescription>
+            </div>
+          </CardHeader>
           <div className="space-y-3">{important.map(p => renderProblem(p))}</div>
         </section>
       )}
 
       {mastered.length > 0 && (
         <section>
-          <CardHeader><CardTitle>✅ Mastered ({mastered.length})</CardTitle></CardHeader>
+          <CardHeader>
+            <div>
+              <CardTitle>Mastered</CardTitle>
+              <CardDescription>Solved confidently — archived from the queue</CardDescription>
+            </div>
+          </CardHeader>
           <div className="space-y-3">{mastered.map(p => renderProblem(p, false))}</div>
         </section>
       )}

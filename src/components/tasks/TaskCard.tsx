@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Check, ChevronDown, ChevronUp } from 'lucide-react'
+import { ChevronDown, ChevronUp } from 'lucide-react'
 import type { DailyTask, Difficulty } from '../../types'
-import { cn, difficultyEmoji, formatMinutes } from '../../lib/utils'
+import { cn, formatMinutes } from '../../lib/utils'
 import { Card } from '../ui/Card'
 import { Input, Textarea } from '../ui/Input'
 import { Badge } from '../ui/Badge'
+import { Checkbox } from '../ui/Checkbox'
 
 interface TaskCardProps {
   icon: string
@@ -16,6 +17,12 @@ interface TaskCardProps {
 
 const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard']
 
+const DIFFICULTY_DOT: Record<Difficulty, string> = {
+  easy: 'bg-mint',
+  medium: 'bg-amber',
+  hard: 'bg-rose',
+}
+
 export function TaskCard({ icon, name, task, onToggle, onUpdate }: TaskCardProps) {
   const [expanded, setExpanded] = useState(false)
 
@@ -26,64 +33,74 @@ export function TaskCard({ icon, name, task, onToggle, onUpdate }: TaskCardProps
     onUpdate({ difficulties: diffs })
   }
 
-  return (
-    <Card className={cn(
-      'transition-all duration-300',
-      task.completed && 'border-[var(--color-success)]/30 bg-green-50/50 dark:bg-green-900/10'
-    )}>
-      <div className="flex items-start gap-4">
-        <button
-          onClick={onToggle}
-          className={cn(
-            'mt-0.5 w-6 h-6 rounded-md border-2 flex items-center justify-center shrink-0 transition-all duration-200',
-            task.completed
-              ? 'bg-[var(--color-success)] border-[var(--color-success)] text-white'
-              : 'border-[var(--color-border)] hover:border-[var(--color-accent)]'
-          )}
-          aria-label={`Mark ${name} as ${task.completed ? 'incomplete' : 'complete'}`}
-        >
-          {task.completed && <Check size={14} strokeWidth={3} />}
-        </button>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2">
-            <h3 className={cn(
-              'font-semibold text-[var(--color-text-primary)]',
-              task.completed && 'line-through opacity-70'
-            )}>
-              {icon} {name}
-            </h3>
+  return (
+    <Card
+      padded={false}
+      className={cn(
+        'p-4 transition-all duration-300 sm:p-5',
+        task.completed && 'border-mint/25 bg-mint/[0.035]'
+      )}
+    >
+      <div className="flex items-start gap-3.5">
+        <Checkbox
+          checked={task.completed}
+          onChange={onToggle}
+          label={`Mark ${name} as ${task.completed ? 'incomplete' : 'complete'}`}
+          className="mt-0.5"
+        />
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span
+                aria-hidden
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-line bg-surface-2 text-[14px]"
+              >
+                {icon}
+              </span>
+              <h3
+                className={cn(
+                  'min-w-0 truncate text-[14.5px] font-semibold tracking-[-0.01em] text-ink transition-colors',
+                  task.completed && 'text-ink-2 line-through decoration-ink-3/50'
+                )}
+              >
+                {name}
+              </h3>
+            </div>
             <button
               onClick={() => setExpanded(!expanded)}
-              className="p-1 rounded hover:bg-[var(--color-surface-hover)] text-[var(--color-text-muted)]"
+              aria-expanded={expanded}
+              aria-label={expanded ? `Collapse ${name} details` : `Expand ${name} details`}
+              className="grid h-7 w-7 shrink-0 place-items-center rounded-[8px] text-ink-3 transition-colors hover:bg-surface-2 hover:text-ink"
             >
-              {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              {expanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
             </button>
           </div>
 
-          <div className="flex flex-wrap gap-3 mt-2 text-sm text-[var(--color-text-secondary)]">
-            <span>
-              Problems: <strong className="text-[var(--color-text-primary)]">{task.problemsSolved} / {task.problemsTarget}</strong>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3.5 gap-y-1.5 pl-[42px] text-[12.5px] text-ink-3">
+            <span className="tabular">
+              <span className="font-semibold text-ink">{task.problemsSolved}</span>
+              {' / '}
+              {task.problemsTarget} problems
             </span>
             {task.timeSpentMinutes > 0 && (
-              <span>Time: <strong className="text-[var(--color-text-primary)]">{formatMinutes(task.timeSpentMinutes)}</strong></span>
+              <span className="tabular">{formatMinutes(task.timeSpentMinutes)}</span>
             )}
-            {task.difficulties.length > 0 && (
-              <span className="flex items-center gap-1">
-                {task.difficulties.map(d => (
-                  <span key={d}>{difficultyEmoji(d)}</span>
-                ))}
-              </span>
-            )}
+            <span className="flex items-center gap-1" aria-label="Difficulty mix">
+              {task.difficulties.map(d => (
+                <span key={d} className={cn('h-2 w-2 rounded-full', DIFFICULTY_DOT[d])} title={d} />
+              ))}
+            </span>
             {task.completed && <Badge variant="success">Done</Badge>}
           </div>
 
           {task.notes && !expanded && (
-            <p className="mt-2 text-sm text-[var(--color-text-muted)] italic truncate">{task.notes}</p>
+            <p className="mt-2 truncate pl-[42px] text-[12.5px] italic text-ink-3">{task.notes}</p>
           )}
 
           {expanded && (
-            <div className="mt-4 space-y-3 animate-fade-in">
+            <div className="animate-fade-in mt-4 space-y-3 border-t border-line pt-4">
               <div className="grid grid-cols-2 gap-3">
                 <Input
                   label="Problems Solved"
@@ -109,20 +126,22 @@ export function TaskCard({ icon, name, task, onToggle, onUpdate }: TaskCardProps
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-[var(--color-text-secondary)] mb-2">Difficulty</label>
+                <label className="mb-2 block text-[13px] font-medium text-ink-2">Difficulty</label>
                 <div className="flex gap-2">
                   {DIFFICULTIES.map(d => (
                     <button
                       key={d}
                       onClick={() => toggleDifficulty(d)}
+                      aria-pressed={task.difficulties.includes(d)}
                       className={cn(
-                        'px-3 py-1.5 rounded-lg text-sm border transition-all',
+                        'rounded-[10px] border px-3 py-1.5 text-[13px] font-medium transition-all',
                         task.difficulties.includes(d)
-                          ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10'
-                          : 'border-[var(--color-border)] hover:border-[var(--color-accent)]/50'
+                          ? 'border-accent/40 bg-accent/10 text-accent'
+                          : 'border-line text-ink-3 hover:border-line-strong hover:text-ink-2'
                       )}
                     >
-                      {difficultyEmoji(d)} {d.charAt(0).toUpperCase() + d.slice(1)}
+                      <span className={cn('mr-1.5 inline-block h-1.5 w-1.5 rounded-full align-middle', DIFFICULTY_DOT[d])} />
+                      {d.charAt(0).toUpperCase() + d.slice(1)}
                     </button>
                   ))}
                 </div>

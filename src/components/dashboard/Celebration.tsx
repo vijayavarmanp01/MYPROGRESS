@@ -1,13 +1,42 @@
 import { useEffect, useState } from 'react'
 import { PartyPopper } from 'lucide-react'
+import { cn } from '../../lib/utils'
 
 interface CelebrationProps {
   show: boolean
   onDone: () => void
 }
 
+const CONFETTI_COLORS = [
+  'var(--chart-1)',
+  'var(--chart-2)',
+  'var(--chart-3)',
+  'var(--chart-4)',
+  'var(--chart-5)',
+]
+
+interface ConfettiPiece {
+  left: number
+  color: string
+  duration: number
+  delay: number
+  round: boolean
+}
+
+/** Generated once per mount so the render stays pure. */
+function makeConfetti(count: number): ConfettiPiece[] {
+  return Array.from({ length: count }, (_, i) => ({
+    left: Math.random() * 100,
+    color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+    duration: 2 + Math.random() * 2,
+    delay: Math.random() * 0.5,
+    round: Math.random() > 0.5,
+  }))
+}
+
 export function Celebration({ show, onDone }: CelebrationProps) {
   const [visible, setVisible] = useState(false)
+  const [confetti] = useState(() => makeConfetti(24))
 
   useEffect(() => {
     if (show) {
@@ -23,26 +52,28 @@ export function Celebration({ show, onDone }: CelebrationProps) {
   if (!visible) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none">
-      <div className="animate-celebrate bg-[var(--color-surface)] border border-[var(--color-border)] rounded-2xl p-8 shadow-2xl text-center">
-        <PartyPopper className="w-12 h-12 text-[var(--color-accent)] mx-auto mb-4" />
-        <h2 className="text-2xl font-bold text-[var(--color-text-primary)] mb-2">
-          All Tasks Complete! 🎉
+    <div className="pointer-events-none fixed inset-0 z-[90] flex items-center justify-center p-4">
+      <div className="animate-scale-in glass-strong rounded-3xl p-8 text-center shadow-pop">
+        <span className="logo-tile mx-auto grid h-14 w-14 place-items-center rounded-2xl text-white shadow-[0_8px_24px_-8px_var(--color-accent)]">
+          <PartyPopper size={24} />
+        </span>
+        <h2 className="mt-4 text-xl font-bold tracking-[-0.02em] text-ink">
+          All tasks complete
         </h2>
-        <p className="text-[var(--color-text-secondary)]">
-          Outstanding work today. Keep the streak alive!
+        <p className="mt-1.5 text-[13.5px] text-ink-2">
+          Outstanding work today. Your streak is safe.
         </p>
       </div>
-      {Array.from({ length: 20 }).map((_, i) => (
+      {confetti.map((piece, i) => (
         <div
           key={i}
-          className="absolute w-2 h-2 rounded-full"
+          aria-hidden
+          className={cn('absolute top-[-10px] h-2 w-2', piece.round ? 'rounded-full' : 'rounded-[3px]')}
           style={{
-            left: `${Math.random() * 100}%`,
-            top: '-10px',
-            backgroundColor: ['#6366f1', '#22c55e', '#eab308', '#ef4444'][i % 4],
-            animation: `confetti-fall ${2 + Math.random() * 2}s linear forwards`,
-            animationDelay: `${Math.random() * 0.5}s`,
+            left: `${piece.left}%`,
+            backgroundColor: piece.color,
+            animation: `confetti-fall ${piece.duration}s linear forwards`,
+            animationDelay: `${piece.delay}s`,
           }}
         />
       ))}

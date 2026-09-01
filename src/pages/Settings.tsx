@@ -1,11 +1,14 @@
 import { useState } from 'react'
-import { Download, Trash2, Moon, Sun, Monitor } from 'lucide-react'
+import { Download, Trash2, Moon, Sun, Monitor, Target, Palette, Layers, DatabaseBackup } from 'lucide-react'
 import { useApp } from '../store/AppContext'
 import type { Theme } from '../types'
-import { Card, CardHeader, CardTitle } from '../components/ui/Card'
+import { downloadFile, exportToCSV } from '../lib/utils'
+import { Card, CardHeader, CardTitle, CardDescription } from '../components/ui/Card'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
-import { downloadFile, exportToCSV } from '../lib/utils'
+import { PageHeader } from '../components/ui/PageHeader'
+import { Segmented } from '../components/ui/Segmented'
+import { Switch } from '../components/ui/Switch'
 
 export function SettingsPage() {
   const { state, dispatch } = useApp()
@@ -50,15 +53,21 @@ export function SettingsPage() {
   ]
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Settings</h1>
-        <p className="text-[var(--color-text-secondary)] mt-1">Configure your study tracker</p>
-      </div>
+    <div className="mx-auto max-w-2xl space-y-6">
+      <PageHeader
+        eyebrow="Preferences"
+        title="Settings"
+        description="Configure your study tracker"
+      />
 
       <Card>
-        <CardHeader><CardTitle>Goals</CardTitle></CardHeader>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <CardHeader>
+          <div>
+            <CardTitle className="flex items-center gap-2"><Target size={15} className="text-accent" /> Goals</CardTitle>
+            <CardDescription>Targets that drive your daily metrics</CardDescription>
+          </div>
+        </CardHeader>
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Input label="Daily Study Goal (minutes)" type="number" min={0}
             value={state.settings.dailyStudyGoalMinutes}
             onChange={e => updateSettings({ dailyStudyGoalMinutes: parseInt(e.target.value) || 0 })} />
@@ -75,47 +84,62 @@ export function SettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Appearance</CardTitle></CardHeader>
-        <div className="flex gap-2">
-          {themeOptions.map(({ value, icon: Icon, label }) => (
-            <button
-              key={value}
-              onClick={() => updateSettings({ theme: value })}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-medium transition-all ${
-                state.settings.theme === value
-                  ? 'border-[var(--color-accent)] bg-[var(--color-accent)]/10 text-[var(--color-accent)]'
-                  : 'border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-[var(--color-accent)]/50'
-              }`}
-            >
-              <Icon size={16} /> {label}
-            </button>
-          ))}
-        </div>
+        <CardHeader>
+          <div>
+            <CardTitle className="flex items-center gap-2"><Palette size={15} className="text-accent" /> Appearance</CardTitle>
+            <CardDescription>Choose how MyProgress looks on this device</CardDescription>
+          </div>
+        </CardHeader>
+        <Segmented
+          ariaLabel="Theme"
+          options={themeOptions}
+          value={state.settings.theme}
+          onChange={value => updateSettings({ theme: value })}
+        />
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Categories</CardTitle></CardHeader>
-        <div className="space-y-2">
+        <CardHeader>
+          <div>
+            <CardTitle className="flex items-center gap-2"><Layers size={15} className="text-accent" /> Categories</CardTitle>
+            <CardDescription>Enabled categories appear in your daily tasks</CardDescription>
+          </div>
+        </CardHeader>
+        <div className="space-y-1">
           {state.categories.map(cat => (
-            <label key={cat.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[var(--color-surface-hover)] cursor-pointer">
-              <input
-                type="checkbox"
+            <div
+              key={cat.id}
+              className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-surface-2"
+            >
+              <span
+                aria-hidden
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-[10px] border border-line bg-surface-2 text-[14px]"
+              >
+                {cat.icon}
+              </span>
+              <span className="min-w-0 flex-1 truncate text-sm text-ink">{cat.name}</span>
+              <Switch
                 checked={cat.enabled}
-                onChange={e => dispatch({
-                  type: 'UPDATE_CATEGORY',
-                  payload: { id: cat.id, updates: { enabled: e.target.checked } },
-                })}
-                className="w-4 h-4 rounded accent-[var(--color-accent)]"
+                ariaLabel={`Toggle ${cat.name}`}
+                onChange={checked =>
+                  dispatch({
+                    type: 'UPDATE_CATEGORY',
+                    payload: { id: cat.id, updates: { enabled: checked } },
+                  })
+                }
               />
-              <span>{cat.icon}</span>
-              <span className="text-sm text-[var(--color-text-primary)]">{cat.name}</span>
-            </label>
+            </div>
           ))}
         </div>
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Data Management</CardTitle></CardHeader>
+        <CardHeader>
+          <div>
+            <CardTitle className="flex items-center gap-2"><DatabaseBackup size={15} className="text-accent" /> Data Management</CardTitle>
+            <CardDescription>Everything is stored locally in your browser</CardDescription>
+          </div>
+        </CardHeader>
         <div className="flex flex-wrap gap-3">
           <Button variant="secondary" onClick={exportJSON}>
             <Download size={16} /> Export JSON
@@ -129,7 +153,9 @@ export function SettingsPage() {
           </Button>
         </div>
         {confirmReset && (
-          <p className="mt-3 text-sm text-red-500">This will permanently delete all your progress. Click again to confirm.</p>
+          <p className="mt-3 rounded-[10px] border border-rose/20 bg-rose/10 p-3 text-[13px] text-rose">
+            This will permanently delete all your progress. Click again to confirm.
+          </p>
         )}
       </Card>
     </div>

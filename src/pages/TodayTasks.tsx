@@ -5,6 +5,8 @@ import { formatDisplayDate } from '../lib/utils'
 import { TaskCard } from '../components/tasks/TaskCard'
 import { ProgressBar } from '../components/ui/ProgressBar'
 import { Celebration } from '../components/dashboard/Celebration'
+import { Card } from '../components/ui/Card'
+import { PageHeader } from '../components/ui/PageHeader'
 
 export function TodayTasksPage() {
   const { state, today, toggleTask, updateTask } = useApp()
@@ -26,21 +28,28 @@ export function TodayTasksPage() {
   }, [toggleTask, today, record, stats, celebrated])
 
   return (
-    <div className="space-y-6 animate-fade-in max-w-3xl">
-      <div>
-        <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Today's Tasks</h1>
-        <p className="text-[var(--color-text-secondary)] mt-1">{formatDisplayDate(today)}</p>
-      </div>
+    <div className="mx-auto max-w-3xl space-y-6">
+      <PageHeader
+        title="Today's Tasks"
+        description={formatDisplayDate(today)}
+      />
 
-      <div className="p-4 rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)]">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-[var(--color-text-secondary)]">
-            {stats.completed} / {stats.total} completed
+      <Card className="p-5">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-sm text-ink-2 tabular">
+            <span className="font-semibold text-ink">{stats.completed}</span> / {stats.total} completed
           </span>
-          <span className="text-sm font-bold text-[var(--color-accent)]">{stats.percentage}%</span>
+          <span className="text-2xl font-bold tracking-[-0.02em] text-accent tabular">
+            {stats.percentage}%
+          </span>
         </div>
-        <ProgressBar value={stats.completed} max={stats.total} size="lg" />
-      </div>
+        <ProgressBar className="mt-3" value={stats.completed} max={stats.total} size="lg" />
+        {record && (
+          <p className="mt-3 text-[12.5px] text-ink-3 tabular">
+            {record.totalProblems} problems solved · {formatDisplayDuration(record.totalTimeMinutes)} logged
+          </p>
+        )}
+      </Card>
 
       <div className="space-y-3">
         {record?.tasks.map(task => {
@@ -62,4 +71,11 @@ export function TodayTasksPage() {
       <Celebration show={showCelebration} onDone={() => setShowCelebration(false)} />
     </div>
   )
+}
+
+function formatDisplayDuration(minutes: number): string {
+  if (minutes <= 0) return '0 min'
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
 }

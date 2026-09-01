@@ -10,10 +10,10 @@ import { Badge } from '../ui/Badge'
 import { formatMinutes } from '../../lib/utils'
 
 const ACTIVITY_COLORS: Record<ActivityLevel, string> = {
-  none: 'bg-[var(--color-surface-hover)]',
-  low: 'bg-yellow-300 dark:bg-yellow-600',
-  good: 'bg-green-400 dark:bg-green-600',
-  high: 'bg-green-600 dark:bg-green-500',
+  none: 'var(--heat-0)',
+  low: 'var(--heat-1)',
+  good: 'var(--heat-2)',
+  high: 'var(--heat-3)',
 }
 
 const ACTIVITY_LABELS: Record<ActivityLevel, string> = {
@@ -89,7 +89,9 @@ export function ContributionCalendar({ year = new Date().getFullYear() }: Contri
                           key={dateStr}
                           onClick={() => setSelectedDate(dateStr)}
                           title={`${formatDisplayDate(dateStr)} — ${ACTIVITY_LABELS[level]}`}
-                          className={`w-[12px] h-[12px] rounded-sm ${ACTIVITY_COLORS[level]} hover:ring-2 hover:ring-[var(--color-accent)]/50 transition-all`}
+                          aria-label={`${formatDisplayDate(dateStr)} — ${ACTIVITY_LABELS[level]}`}
+                          style={{ backgroundColor: ACTIVITY_COLORS[level] }}
+                          className="h-[12px] w-[12px] rounded-[3.5px] transition-transform duration-150 hover:scale-125 focus-visible:scale-125"
                         />
                       )
                     })}
@@ -101,10 +103,15 @@ export function ContributionCalendar({ year = new Date().getFullYear() }: Contri
         </div>
       </div>
 
-      <div className="flex items-center gap-3 mt-4 text-xs text-[var(--color-text-muted)]">
+      <div className="flex items-center gap-3 mt-4 text-xs text-[var(--color-ink-3)]">
         <span>Less</span>
         {(Object.keys(ACTIVITY_COLORS) as ActivityLevel[]).map(level => (
-          <div key={level} className={`w-[12px] h-[12px] rounded-sm ${ACTIVITY_COLORS[level]}`} title={ACTIVITY_LABELS[level]} />
+          <div
+            key={level}
+            className="h-[12px] w-[12px] rounded-[3.5px]"
+            style={{ backgroundColor: ACTIVITY_COLORS[level] }}
+            title={ACTIVITY_LABELS[level]}
+          />
         ))}
         <span>More</span>
       </div>
@@ -116,30 +123,32 @@ export function ContributionCalendar({ year = new Date().getFullYear() }: Contri
       >
         {dayDetail && (
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-[var(--color-text-muted)]">Tasks Completed</p>
-                <p className="text-xl font-bold">{dayDetail.tasksCompleted} / {dayDetail.totalTasks}</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-tile border border-line bg-surface-2 p-3.5">
+                <p className="text-[11.5px] font-medium text-ink-3">Tasks Completed</p>
+                <p className="mt-1 text-lg font-bold text-ink tabular">{dayDetail.tasksCompleted} / {dayDetail.totalTasks}</p>
               </div>
-              <div>
-                <p className="text-sm text-[var(--color-text-muted)]">Problems Solved</p>
-                <p className="text-xl font-bold">{dayDetail.problemsSolved}</p>
+              <div className="rounded-tile border border-line bg-surface-2 p-3.5">
+                <p className="text-[11.5px] font-medium text-ink-3">Problems Solved</p>
+                <p className="mt-1 text-lg font-bold text-ink tabular">{dayDetail.problemsSolved}</p>
               </div>
-              <div>
-                <p className="text-sm text-[var(--color-text-muted)]">Study Time</p>
-                <p className="text-xl font-bold">{formatMinutes(dayDetail.studyTimeMinutes)}</p>
+              <div className="rounded-tile border border-line bg-surface-2 p-3.5">
+                <p className="text-[11.5px] font-medium text-ink-3">Study Time</p>
+                <p className="mt-1 text-lg font-bold text-ink tabular">{formatMinutes(dayDetail.studyTimeMinutes)}</p>
               </div>
-              <div>
-                <p className="text-sm text-[var(--color-text-muted)]">Activity</p>
-                <Badge variant={dayDetail.activityLevel === 'high' ? 'success' : dayDetail.activityLevel === 'none' ? 'default' : 'warning'}>
-                  {ACTIVITY_LABELS[dayDetail.activityLevel]}
-                </Badge>
+              <div className="rounded-tile border border-line bg-surface-2 p-3.5">
+                <p className="text-[11.5px] font-medium text-ink-3">Activity</p>
+                <div className="mt-1.5">
+                  <Badge variant={dayDetail.activityLevel === 'high' ? 'accent' : dayDetail.activityLevel === 'none' ? 'default' : 'sky'}>
+                    {ACTIVITY_LABELS[dayDetail.activityLevel]}
+                  </Badge>
+                </div>
               </div>
             </div>
 
             {dayDetail.topicsPracticed.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Topics Practiced</p>
+                <p className="mb-2 text-[13px] font-medium text-ink-2">Topics Practiced</p>
                 <div className="flex flex-wrap gap-2">
                   {dayDetail.topicsPracticed.map(t => (
                     <Badge key={t} variant="accent">{t}</Badge>
@@ -150,9 +159,9 @@ export function ContributionCalendar({ year = new Date().getFullYear() }: Contri
 
             {dayDetail.notes.length > 0 && (
               <div>
-                <p className="text-sm font-medium text-[var(--color-text-secondary)] mb-2">Notes</p>
+                <p className="mb-2 text-[13px] font-medium text-ink-2">Notes</p>
                 {dayDetail.notes.map((note, i) => (
-                  <p key={i} className="text-sm text-[var(--color-text-primary)] bg-[var(--color-surface-hover)] rounded-lg p-3 mb-2">
+                  <p key={i} className="mb-2 rounded-[10px] border border-line bg-surface-2 p-3 text-[13px] text-ink">
                     {note}
                   </p>
                 ))}
@@ -160,7 +169,7 @@ export function ContributionCalendar({ year = new Date().getFullYear() }: Contri
             )}
 
             {dayDetail.tasksCompleted === 0 && (
-              <p className="text-sm text-[var(--color-text-muted)] text-center py-4">No study activity recorded for this day.</p>
+              <p className="py-4 text-center text-[13px] text-ink-3">No study activity recorded for this day.</p>
             )}
           </div>
         )}
