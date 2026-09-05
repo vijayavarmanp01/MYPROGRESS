@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom'
-import { Menu, Search, Sun, Moon, Flame, LogOut, User, Compass } from 'lucide-react'
+import { Menu, Search, Sun, Moon, Flame, LogOut, User, Compass, Settings } from 'lucide-react'
 import { Sidebar } from './Sidebar'
 import { MobileNav, MobileDrawer } from './MobileNav'
 import { CommandPalette } from '../command/CommandPalette'
@@ -221,7 +221,18 @@ function AvatarMenu({
             <span>Profile</span>
           </Link>
 
-          {/* 2. Product Overview / Landing Page Option */}
+          {/* 2. Settings Option */}
+          <Link
+            to="/settings"
+            onClick={() => setOpen(false)}
+            role="menuitem"
+            className="flex w-full items-center gap-2.5 rounded-[10px] px-3 py-2 text-[13px] font-medium text-ink-2 hover:bg-surface-2 hover:text-ink transition-colors"
+          >
+            <Settings size={14} className="text-ink-3" />
+            <span>Settings</span>
+          </Link>
+
+          {/* 3. Product Overview / Landing Page Option */}
           <Link
             to="/landing"
             onClick={() => setOpen(false)}

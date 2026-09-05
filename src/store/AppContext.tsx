@@ -1,6 +1,7 @@
-import { createContext, useContext, useReducer, useEffect, useCallback, type ReactNode } from 'react'
+import { createContext, useContext, useReducer, useEffect, useCallback, useRef, type ReactNode } from 'react'
 import type { AppAction, AppState, DailyTask, Problem, RevisionInterval } from '../types'
 import { createDefaultState, REVISION_INTERVALS } from '../data/defaults'
+import { useAuth } from './AuthContext'
 import {
   loadState,
   saveState,
@@ -197,11 +198,25 @@ interface AppContextValue {
 const AppContext = createContext<AppContextValue | null>(null)
 
 export function AppProvider({ children }: { children: ReactNode }) {
+  const { user } = useAuth()
+  const userId = user?.id ?? null
+
   const [state, dispatch] = useReducer(appReducer, undefined, () => {
-    const loaded = ensureTodayRecord(loadState())
+    const loaded = ensureTodayRecord(loadState(userId))
     const streak = calculateStreak(loaded.dayRecords, loaded.categories)
     return { ...loaded, streak }
   })
+
+  // When userId changes (login or logout), reload corresponding user-scoped state
+  const prevUserIdRef = useRef(userId)
+  useEffect(() => {
+    if (prevUserIdRef.current !== userId) {
+      prevUserIdRef.current = userId
+      const loaded = ensureTodayRecord(loadState(userId))
+      const streak = calculateStreak(loaded.dayRecords, loaded.categories)
+      dispatch({ type: 'LOAD_STATE', payload: { ...loaded, streak } })
+    }
+  }, [userId])
 
   const today = getTodayString()
 
@@ -213,8 +228,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [today])
 
   useEffect(() => {
-    saveState(state)
-  }, [state])
+    saveState(state, userId)
+  }, [state, userId])
 
   const toggleTask = useCallback((date: string, categoryId: string) => {
     dispatch({ type: 'TOGGLE_TASK', payload: { date, categoryId } })

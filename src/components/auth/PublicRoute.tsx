@@ -25,7 +25,7 @@ export function PublicRoute({ children }: PublicRouteProps) {
 
   if (isAuthenticated) {
     const rawRedirect = searchParams.get('redirect')
-    const destination = rawRedirect && rawRedirect.startsWith('/') ? rawRedirect : '/dashboard'
+    const destination = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/dashboard'
     return <Navigate to={destination} replace />
   }
 

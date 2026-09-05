@@ -4,19 +4,38 @@ import { formatDate, getTodayString } from './utils'
 
 const STORAGE_KEY = 'myprogress-app-state'
 
-export function loadState(): AppState {
+export function getStorageKey(userId?: string | null): string {
+  if (userId) {
+    return `myprogress-app-state-${userId}`
+  }
+  return STORAGE_KEY
+}
+
+export function loadState(userId?: string | null): AppState {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    if (!stored) return createDefaultState()
-    const parsed = JSON.parse(stored) as AppState
-    return migrateState(parsed)
+    const key = getStorageKey(userId)
+    const stored = localStorage.getItem(key)
+    if (stored) {
+      const parsed = JSON.parse(stored) as AppState
+      return migrateState(parsed)
+    }
+    // If no user-specific data yet and guest/legacy exists, fall back
+    if (!userId) {
+      const legacy = localStorage.getItem(STORAGE_KEY)
+      if (legacy) {
+        const parsed = JSON.parse(legacy) as AppState
+        return migrateState(parsed)
+      }
+    }
+    return createDefaultState()
   } catch {
     return createDefaultState()
   }
 }
 
-export function saveState(state: AppState): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+export function saveState(state: AppState, userId?: string | null): void {
+  const key = getStorageKey(userId)
+  localStorage.setItem(key, JSON.stringify(state))
 }
 
 function migrateState(state: Partial<AppState>): AppState {

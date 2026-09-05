@@ -101,6 +101,42 @@ async function runAuthTests() {
   console.log(`   Progress Stats: Streak = ${meData.user.progress?.currentStreak} days\n`)
 
   // ─────────────────────────────────────────────────────────────
+  // 4b. Test PUT /api/auth/profile (Update Profile)
+  // ─────────────────────────────────────────────────────────────
+  console.log('4️⃣b Testing PUT /api/auth/profile...')
+  const updateRes = await fetch(`${BASE_URL}/profile`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      name: 'Alex Turing Updated',
+      bio: 'Staff Engineer preparing for L6 system design and advanced DP.',
+      targetRole: 'Staff Software Engineer',
+      targetCompanies: ['Google', 'DeepMind', 'Anthropic'],
+      avatarInitial: 'AT',
+      avatarGradient: 'from-[#10b981] to-[#06b6d4]',
+    }),
+  })
+
+  const updateData: any = await updateRes.json()
+  if (!updateRes.ok || updateData.status !== 'success') {
+    throw new Error(`PUT /profile failed: ${JSON.stringify(updateData)}`)
+  }
+  console.log('✅ PUT /api/auth/profile succeeded!')
+  console.log(`   Updated Name: ${updateData.user.name}`)
+  console.log(`   Updated Target Role: ${updateData.user.targetRole}`)
+  console.log(`   Updated Bio: ${updateData.user.bio}`)
+
+  // Verify in MySQL
+  const dbUpdated = await prisma.user.findUnique({ where: { email: testEmail } })
+  if (dbUpdated?.name !== 'Alex Turing Updated' || dbUpdated?.targetRole !== 'Staff Software Engineer') {
+    throw new Error('❌ Profile changes were NOT reflected in MySQL database!')
+  }
+  console.log('✅ MySQL verification confirmed profile update in users table!\n')
+
+  // ─────────────────────────────────────────────────────────────
   // 5. Test Duplicate Email Prevention (Conflict Check)
   // ─────────────────────────────────────────────────────────────
   console.log('5️⃣ Testing duplicate email registration prevention...')

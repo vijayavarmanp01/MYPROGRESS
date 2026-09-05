@@ -227,13 +227,39 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const updateUser = useCallback((updates: Partial<AuthUser>) => {
+  const updateUser = useCallback(async (updates: Partial<AuthUser>) => {
     setAuth(s => {
       if (!s.user) return s
-      const updated = { ...s.user, ...updates }
+      const updated = enrichUserDefaults({ ...s.user, ...updates })
       saveUser(updated)
       return { ...s, user: updated }
     })
+
+    const token = getAuthToken()
+    if (!token) return
+
+    try {
+      const res = await fetch('/api/auth/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        credentials: 'include',
+        body: JSON.stringify(updates),
+      })
+
+      if (res.ok) {
+        const data = await res.json()
+        if (data.user) {
+          const enriched = enrichUserDefaults(data.user)
+          saveUser(enriched)
+          setAuth(s => ({ ...s, user: enriched }))
+        }
+      }
+    } catch (err) {
+      console.warn('Profile sync error:', err)
+    }
   }, [])
 
   return (

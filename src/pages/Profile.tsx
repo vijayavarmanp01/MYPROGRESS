@@ -773,7 +773,9 @@ function EditProfileModal({
   const [githubUrl, setGithubUrl] = useState(user?.githubUrl || '')
   const [linkedinUrl, setLinkedinUrl] = useState(user?.linkedinUrl || '')
   const [leetcodeUrl, setLeetcodeUrl] = useState(user?.leetcodeUrl || '')
-  const [avatarInitial, setAvatarInitial] = useState(user?.avatarInitial || 'V')
+  const [avatarInitial, setAvatarInitial] = useState(
+    user?.avatarInitial || (user?.name ? user.name[0].toUpperCase() : 'U')
+  )
   const [avatarGradient, setAvatarGradient] = useState(user?.avatarGradient || 'from-[#5561f0] to-[#a78bfa]')
   const [companiesStr, setCompaniesStr] = useState((user?.targetCompanies || ['Google', 'Meta', 'Stripe']).join(', '))
 
@@ -793,14 +795,14 @@ function EditProfileModal({
       .filter(Boolean)
 
     onSave({
-      name: name.trim() || 'User',
-      username: username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '') || 'coder',
+      name: name.trim() || 'Developer',
+      username: username.trim().toLowerCase().replace(/[^a-z0-9_]/g, '') || 'developer',
       bio: bio.trim(),
       targetRole: targetRole.trim(),
       githubUrl: githubUrl.trim(),
       linkedinUrl: linkedinUrl.trim(),
       leetcodeUrl: leetcodeUrl.trim(),
-      avatarInitial: (avatarInitial.trim()[0] || name[0] || 'V').toUpperCase(),
+      avatarInitial: (avatarInitial.trim()[0] || name[0] || 'U').toUpperCase(),
       avatarGradient,
       targetCompanies: targetCompanies.length ? targetCompanies : ['Google', 'Meta', 'Stripe'],
     })

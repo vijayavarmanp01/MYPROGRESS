@@ -185,7 +185,7 @@ export function AuthPage() {
   const [searchParams] = useSearchParams()
 
   const rawRedirect = searchParams.get('redirect')
-  const redirectTarget = rawRedirect && rawRedirect.startsWith('/') ? rawRedirect : '/dashboard'
+  const redirectTarget = rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') ? rawRedirect : '/dashboard'
 
   const getInitialMode = (): Mode => {
     const q = searchParams.get('mode')
