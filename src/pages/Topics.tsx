@@ -26,19 +26,26 @@ export function TopicsPage() {
         description="Long-term progress across all DSA topics"
       />
 
-      <Card>
+      {/* Overall progress hero card */}
+      <Card className="aurora-card">
         <CardHeader>
           <div>
             <CardTitle>Overall Progress</CardTitle>
             <CardDescription>
-              {enabledCount} active topic{enabledCount === 1 ? '' : 's'} · {totalSolved} of {totalPlanned} problems solved
+              {enabledCount} active topic{enabledCount === 1 ? '' : 's'} ·{' '}
+              <span className="font-semibold text-ink tabular">{totalSolved}</span> of{' '}
+              <span className="font-semibold text-ink tabular">{totalPlanned}</span> problems solved
             </CardDescription>
           </div>
-          <span className="text-3xl font-extrabold tracking-[-0.03em] text-ink tabular">{overall}%</span>
+          <span className="text-[36px] font-extrabold tracking-[-0.04em] text-ink tabular">
+            {overall}
+            <span className="text-[22px] text-ink-3">%</span>
+          </span>
         </CardHeader>
         <ProgressBar value={totalSolved} max={totalPlanned} size="lg" />
       </Card>
 
+      {/* Topic grid */}
       <div className="stagger grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {sorted.map(category => (
           <TopicProgressCard key={category.id} category={category} />

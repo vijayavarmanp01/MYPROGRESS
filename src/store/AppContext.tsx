@@ -21,19 +21,31 @@ function appReducer(state: AppState, action: AppAction): AppState {
       const record = state.dayRecords[date]
       if (!record) return state
 
+      // Capture old task state BEFORE toggling
+      const oldTask = record.tasks.find(t => t.categoryId === categoryId)
+      const wasCompleted = oldTask?.completed ?? false
+
       const tasks = record.tasks.map(t =>
         t.categoryId === categoryId ? { ...t, completed: !t.completed } : t
       )
       const updatedRecord = recalculateDayTotals({ ...record, tasks })
       const dayRecords = { ...state.dayRecords, [date]: updatedRecord }
 
-      // Update category problems solved if toggling on with problems
+      // Update category problems solved correctly on both toggle directions
       const task = tasks.find(t => t.categoryId === categoryId)!
       let categories = state.categories
-      if (task.completed && task.problemsSolved > 0) {
+      if (!wasCompleted && task.completed && task.problemsSolved > 0) {
+        // Toggling ON — increment
         categories = categories.map(c =>
           c.id === categoryId
             ? { ...c, problemsSolved: c.problemsSolved + task.problemsSolved }
+            : c
+        )
+      } else if (wasCompleted && !task.completed && task.problemsSolved > 0) {
+        // Toggling OFF — decrement
+        categories = categories.map(c =>
+          c.id === categoryId
+            ? { ...c, problemsSolved: Math.max(0, c.problemsSolved - task.problemsSolved) }
             : c
         )
       }

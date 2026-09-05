@@ -1,12 +1,14 @@
 import { useState, useCallback } from 'react'
 import { useApp } from '../store/AppContext'
 import { getTodayStats } from '../lib/analytics'
-import { formatDisplayDate } from '../lib/utils'
+import { formatDisplayDate, formatMinutes } from '../lib/utils'
 import { TaskCard } from '../components/tasks/TaskCard'
 import { ProgressBar } from '../components/ui/ProgressBar'
+import { CircularProgress } from '../components/ui/CircularProgress'
 import { Celebration } from '../components/dashboard/Celebration'
 import { Card } from '../components/ui/Card'
 import { PageHeader } from '../components/ui/PageHeader'
+import { Clock, Target } from 'lucide-react'
 
 export function TodayTasksPage() {
   const { state, today, toggleTask, updateTask } = useApp()
@@ -34,24 +36,55 @@ export function TodayTasksPage() {
         description={formatDisplayDate(today)}
       />
 
-      <Card className="p-5">
-        <div className="flex items-center justify-between gap-4">
-          <span className="text-sm text-ink-2 tabular">
-            <span className="font-semibold text-ink">{stats.completed}</span> / {stats.total} completed
-          </span>
-          <span className="text-2xl font-bold tracking-[-0.02em] text-accent tabular">
-            {stats.percentage}%
-          </span>
+      {/* Progress overview card */}
+      <Card className="p-5 sm:p-6">
+        <div className="flex items-center gap-6">
+          {/* Circular progress */}
+          <div className="shrink-0">
+            <CircularProgress
+              percentage={stats.percentage}
+              size={88}
+              strokeWidth={8}
+              glow={stats.percentage > 0}
+            >
+              <span className="text-[15px] font-bold leading-none text-ink tabular">
+                {stats.percentage}%
+              </span>
+            </CircularProgress>
+          </div>
+
+          {/* Stats text */}
+          <div className="min-w-0 flex-1">
+            <div className="flex items-end gap-1">
+              <span className="text-[28px] font-extrabold leading-none tracking-[-0.03em] text-accent tabular">
+                {stats.completed}
+              </span>
+              <span className="mb-0.5 text-[16px] font-semibold text-ink-3">
+                / {stats.total}
+              </span>
+              <span className="mb-0.5 ml-1 text-sm text-ink-3">tasks done</span>
+            </div>
+
+            <ProgressBar className="mt-3" value={stats.completed} max={stats.total} size="md" />
+
+            {record && (
+              <div className="mt-3 flex flex-wrap gap-3 text-[12.5px] text-ink-3">
+                <span className="chip-mint flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium tabular">
+                  <Target size={11} />
+                  {record.totalProblems} problem{record.totalProblems !== 1 ? 's' : ''} solved
+                </span>
+                <span className="chip-sky flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[12px] font-medium tabular">
+                  <Clock size={11} />
+                  {formatMinutes(record.totalTimeMinutes)} logged
+                </span>
+              </div>
+            )}
+          </div>
         </div>
-        <ProgressBar className="mt-3" value={stats.completed} max={stats.total} size="lg" />
-        {record && (
-          <p className="mt-3 text-[12.5px] text-ink-3 tabular">
-            {record.totalProblems} problems solved · {formatDisplayDuration(record.totalTimeMinutes)} logged
-          </p>
-        )}
       </Card>
 
-      <div className="space-y-3">
+      {/* Task cards */}
+      <div className="stagger space-y-3">
         {record?.tasks.map(task => {
           const cat = state.categories.find(c => c.id === task.categoryId)
           if (!cat) return null
@@ -71,11 +104,4 @@ export function TodayTasksPage() {
       <Celebration show={showCelebration} onDone={() => setShowCelebration(false)} />
     </div>
   )
-}
-
-function formatDisplayDuration(minutes: number): string {
-  if (minutes <= 0) return '0 min'
-  const hours = Math.floor(minutes / 60)
-  const mins = minutes % 60
-  return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`
 }

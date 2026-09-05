@@ -77,7 +77,7 @@ export function createDefaultState(): AppState {
 }
 
 export const NAV_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: '🏠', path: '/' },
+  { id: 'dashboard', label: 'Dashboard', icon: '🏠', path: '/dashboard' },
   { id: 'tasks', label: "Today's Tasks", icon: '📋', path: '/tasks' },
   { id: 'topics', label: 'Topics', icon: '📚', path: '/topics' },
   { id: 'problems', label: 'Problems', icon: '💻', path: '/problems' },

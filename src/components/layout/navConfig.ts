@@ -9,6 +9,8 @@ import {
   CalendarDays,
   Target,
   Settings,
+  Sparkles,
+  User,
 } from 'lucide-react'
 
 export interface NavEntry {
@@ -23,7 +25,7 @@ export const NAV_SECTIONS: { title: string; items: NavEntry[] }[] = [
   {
     title: 'Workspace',
     items: [
-      { id: 'dashboard', label: 'Overview', short: 'Home', path: '/', icon: House },
+      { id: 'dashboard', label: 'Overview', short: 'Home', path: '/dashboard', icon: House },
       { id: 'tasks', label: "Today's Tasks", short: 'Tasks', path: '/tasks', icon: ListChecks },
       { id: 'topics', label: 'Topics', short: 'Topics', path: '/topics', icon: Library },
       { id: 'problems', label: 'Problems', short: 'Problems', path: '/problems', icon: CodeXml },
@@ -38,9 +40,31 @@ export const NAV_SECTIONS: { title: string; items: NavEntry[] }[] = [
       { id: 'interview', label: 'Interview Prep', short: 'Interview', path: '/interview', icon: Target },
     ],
   },
+  {
+    title: 'Identity',
+    items: [
+      { id: 'profile', label: 'Developer Profile', short: 'Profile', path: '/profile', icon: User },
+    ],
+  },
 ]
 
 export const ALL_NAV_ITEMS: NavEntry[] = NAV_SECTIONS.flatMap(s => s.items)
+
+export const PROFILE_NAV: NavEntry = {
+  id: 'profile',
+  label: 'Profile',
+  short: 'Profile',
+  path: '/profile',
+  icon: User,
+}
+
+export const LANDING_NAV: NavEntry = {
+  id: 'landing',
+  label: 'Product Overview',
+  short: 'Overview',
+  path: '/landing',
+  icon: Sparkles,
+}
 
 export const SETTINGS_NAV: NavEntry = {
   id: 'settings',
@@ -52,7 +76,7 @@ export const SETTINGS_NAV: NavEntry = {
 
 /** Bottom tab bar on mobile: 4 primary destinations + menu. */
 export const MOBILE_TABS: NavEntry[] = [
-  { id: 'dashboard', label: 'Home', short: 'Home', path: '/', icon: House },
+  { id: 'dashboard', label: 'Home', short: 'Home', path: '/dashboard', icon: House },
   { id: 'tasks', label: 'Tasks', short: 'Tasks', path: '/tasks', icon: ListChecks },
   { id: 'problems', label: 'Problems', short: 'Problems', path: '/problems', icon: CodeXml },
   { id: 'analytics', label: 'Stats', short: 'Stats', path: '/analytics', icon: ChartColumn },

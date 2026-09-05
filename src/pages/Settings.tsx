@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Download, Trash2, Moon, Sun, Monitor, Target, Palette, Layers, DatabaseBackup } from 'lucide-react'
+import { Download, Trash2, Moon, Sun, Monitor, Target, Palette, Layers, DatabaseBackup, Shield } from 'lucide-react'
 import { useApp } from '../store/AppContext'
 import type { Theme } from '../types'
 import { downloadFile, exportToCSV } from '../lib/utils'
@@ -47,10 +47,13 @@ export function SettingsPage() {
   }
 
   const themeOptions: { value: Theme; icon: typeof Sun; label: string }[] = [
-    { value: 'light', icon: Sun, label: 'Light' },
-    { value: 'dark', icon: Moon, label: 'Dark' },
+    { value: 'light',  icon: Sun,     label: 'Light' },
+    { value: 'dark',   icon: Moon,    label: 'Dark' },
     { value: 'system', icon: Monitor, label: 'System' },
   ]
+
+  const enabledCount  = state.categories.filter(c => c.enabled).length
+  const disabledCount = state.categories.length - enabledCount
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -60,33 +63,60 @@ export function SettingsPage() {
         description="Configure your study tracker"
       />
 
+      {/* Goals */}
       <Card>
         <CardHeader>
           <div>
-            <CardTitle className="flex items-center gap-2"><Target size={15} className="text-accent" /> Goals</CardTitle>
-            <CardDescription>Targets that drive your daily metrics</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Target size={15} className="text-accent" />
+              Study Goals
+            </CardTitle>
+            <CardDescription>Targets that drive your daily metrics and progress bars</CardDescription>
           </div>
         </CardHeader>
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <Input label="Daily Study Goal (minutes)" type="number" min={0}
+          <Input
+            label="Daily Study Goal (minutes)"
+            type="number"
+            min={0}
             value={state.settings.dailyStudyGoalMinutes}
-            onChange={e => updateSettings({ dailyStudyGoalMinutes: parseInt(e.target.value) || 0 })} />
-          <Input label="Problems Per Day Goal" type="number" min={0}
+            onChange={e => updateSettings({ dailyStudyGoalMinutes: parseInt(e.target.value) || 0 })}
+            hint="Recommended: 90–180 minutes per day"
+          />
+          <Input
+            label="Problems Per Day Goal"
+            type="number"
+            min={0}
             value={state.settings.problemsPerDayGoal}
-            onChange={e => updateSettings({ problemsPerDayGoal: parseInt(e.target.value) || 0 })} />
-          <Input label="Weekly Problems Goal" type="number" min={0}
+            onChange={e => updateSettings({ problemsPerDayGoal: parseInt(e.target.value) || 0 })}
+            hint="Realistic starting point: 3–5 problems"
+          />
+          <Input
+            label="Weekly Problems Goal"
+            type="number"
+            min={0}
             value={state.settings.weeklyProblemsGoal}
-            onChange={e => updateSettings({ weeklyProblemsGoal: parseInt(e.target.value) || 0 })} />
-          <Input label="Weekly Task Completion Goal (%)" type="number" min={0} max={100}
+            onChange={e => updateSettings({ weeklyProblemsGoal: parseInt(e.target.value) || 0 })}
+          />
+          <Input
+            label="Weekly Task Completion Goal (%)"
+            type="number"
+            min={0}
+            max={100}
             value={state.settings.weeklyTaskCompletionGoal}
-            onChange={e => updateSettings({ weeklyTaskCompletionGoal: parseInt(e.target.value) || 0 })} />
+            onChange={e => updateSettings({ weeklyTaskCompletionGoal: parseInt(e.target.value) || 0 })}
+          />
         </div>
       </Card>
 
+      {/* Appearance */}
       <Card>
         <CardHeader>
           <div>
-            <CardTitle className="flex items-center gap-2"><Palette size={15} className="text-accent" /> Appearance</CardTitle>
+            <CardTitle className="flex items-center gap-2">
+              <Palette size={15} className="text-accent" />
+              Appearance
+            </CardTitle>
             <CardDescription>Choose how MyProgress looks on this device</CardDescription>
           </div>
         </CardHeader>
@@ -98,18 +128,24 @@ export function SettingsPage() {
         />
       </Card>
 
+      {/* Categories */}
       <Card>
         <CardHeader>
           <div>
-            <CardTitle className="flex items-center gap-2"><Layers size={15} className="text-accent" /> Categories</CardTitle>
-            <CardDescription>Enabled categories appear in your daily tasks</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <Layers size={15} className="text-accent" />
+              Categories
+            </CardTitle>
+            <CardDescription>
+              {enabledCount} active · {disabledCount} disabled — enabled categories appear in daily tasks
+            </CardDescription>
           </div>
         </CardHeader>
-        <div className="space-y-1">
+        <div className="space-y-0.5">
           {state.categories.map(cat => (
             <div
               key={cat.id}
-              className="flex items-center gap-3 rounded-xl px-2.5 py-2 transition-colors hover:bg-surface-2"
+              className="flex items-center gap-3 rounded-xl px-3 py-2 transition-colors hover:bg-surface-2"
             >
               <span
                 aria-hidden
@@ -133,12 +169,20 @@ export function SettingsPage() {
         </div>
       </Card>
 
+      {/* Data management */}
       <Card>
         <CardHeader>
           <div>
-            <CardTitle className="flex items-center gap-2"><DatabaseBackup size={15} className="text-accent" /> Data Management</CardTitle>
-            <CardDescription>Everything is stored locally in your browser</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <DatabaseBackup size={15} className="text-accent" />
+              Data Management
+            </CardTitle>
+            <CardDescription>All data is stored locally in your browser — nothing leaves your device</CardDescription>
           </div>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-mint/20 bg-mint/10 px-2.5 py-1 text-[11.5px] font-semibold text-mint">
+            <Shield size={11} />
+            Local only
+          </span>
         </CardHeader>
         <div className="flex flex-wrap gap-3">
           <Button variant="secondary" onClick={exportJSON}>
@@ -149,13 +193,22 @@ export function SettingsPage() {
           </Button>
           <Button variant="danger" onClick={handleReset}>
             <Trash2 size={16} />
-            {confirmReset ? 'Confirm Reset?' : 'Reset All Data'}
+            {confirmReset ? 'Confirm — wipe all data?' : 'Reset All Data'}
           </Button>
         </div>
         {confirmReset && (
-          <p className="mt-3 rounded-[10px] border border-rose/20 bg-rose/10 p-3 text-[13px] text-rose">
-            This will permanently delete all your progress. Click again to confirm.
-          </p>
+          <div className="mt-4 rounded-xl border border-rose/20 bg-rose/8 p-4">
+            <p className="text-[13px] font-medium text-rose">
+              ⚠️ This will permanently delete all your progress, problems, and records.
+              Click the button again to confirm.
+            </p>
+            <button
+              onClick={() => setConfirmReset(false)}
+              className="mt-2 text-[12.5px] font-medium text-ink-3 underline transition-colors hover:text-ink"
+            >
+              Cancel
+            </button>
+          </div>
         )}
       </Card>
     </div>

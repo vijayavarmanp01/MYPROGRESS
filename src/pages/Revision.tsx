@@ -11,44 +11,53 @@ import { EmptyState } from '../components/ui/EmptyState'
 import { PageHeader } from '../components/ui/PageHeader'
 
 const DIFFICULTY_DOT: Record<string, string> = {
-  easy: 'bg-mint',
+  easy:   'bg-mint',
   medium: 'bg-amber',
-  hard: 'bg-rose',
+  hard:   'bg-rose',
+}
+
+const DIFFICULTY_LABEL_COLOR: Record<string, string> = {
+  easy:   'text-mint',
+  medium: 'text-amber',
+  hard:   'text-rose',
 }
 
 export function RevisionPage() {
   const { state, setRevision, updateProblem } = useApp()
   const dueProblems = getRevisionDueProblems(state)
 
-  const important = state.problems.filter(p => p.revisionStatus === 'important')
+  const important    = state.problems.filter(p => p.revisionStatus === 'important')
   const needsRevision = state.problems.filter(p => p.revisionStatus === 'needs-revision')
-  const mastered = state.problems.filter(p => p.revisionStatus === 'mastered')
+  const mastered     = state.problems.filter(p => p.revisionStatus === 'mastered')
 
   const renderProblem = (problem: typeof state.problems[0], showActions = true) => {
     const topic = state.categories.find(c => c.id === problem.topicId)
     return (
       <Card key={problem.id} className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h3 className="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">{problem.name}</h3>
+              <h3 className="text-[14.5px] font-semibold tracking-[-0.01em] text-ink">
+                {problem.name}
+              </h3>
               {problem.revisionStatus === 'important' && (
-                <Star size={14} className="fill-amber text-amber" aria-label="Important" />
+                <Star size={13} className="fill-amber text-amber" aria-label="Important" />
               )}
               {problem.revisionStatus === 'needs-revision' && (
-                <RotateCcw size={14} className="text-sky" aria-label="Needs revision" />
+                <RotateCcw size={13} className="text-sky" aria-label="Needs revision" />
               )}
               {problem.revisionStatus === 'mastered' && (
-                <CircleCheck size={14} className="text-mint" aria-label="Mastered" />
+                <CircleCheck size={13} className="text-mint" aria-label="Mastered" />
               )}
             </div>
-            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px] text-ink-3">
-              <span className="flex items-center gap-1.5">
+
+            <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[12.5px]">
+              <span className={cn('flex items-center gap-1.5', DIFFICULTY_LABEL_COLOR[problem.difficulty])}>
                 <span className={cn('h-2 w-2 rounded-full', DIFFICULTY_DOT[problem.difficulty])} />
                 {difficultyLabel(problem.difficulty)}
               </span>
               {topic && (
-                <span>
+                <span className="text-ink-3">
                   {topic.icon} {topic.name}
                 </span>
               )}
@@ -56,15 +65,27 @@ export function RevisionPage() {
                 <Badge variant="warning">Due {formatDisplayDate(problem.revisionDate)}</Badge>
               )}
             </div>
-            {problem.notes && <p className="mt-2 text-[13px] text-ink-2">{problem.notes}</p>}
+
+            {problem.notes && (
+              <p className="mt-2 text-[13px] leading-relaxed text-ink-2">{problem.notes}</p>
+            )}
           </div>
+
           {showActions && (
             <div className="flex shrink-0 flex-col items-stretch gap-1.5">
-              <Button size="sm" variant="secondary" onClick={() => updateProblem(problem.id, { status: 'revised' })}>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => updateProblem(problem.id, { status: 'revised' })}
+              >
                 Mark revised
               </Button>
-              <Button size="sm" variant="ghost" onClick={() => setRevision(problem.id, 'mastered')}>
-                Mastered
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setRevision(problem.id, 'mastered')}
+              >
+                Mastered ✓
               </Button>
               {problem.url && (
                 <a
@@ -80,14 +101,19 @@ export function RevisionPage() {
             </div>
           )}
         </div>
+
+        {/* Reschedule intervals */}
         <div className="mt-3 flex flex-wrap gap-1.5 border-t border-line pt-3">
+          <span className="mr-1 self-center text-[11.5px] font-medium text-ink-3">Next review:</span>
           {REVISION_INTERVALS.map(interval => (
             <Button
               key={interval.value}
               size="sm"
               variant="ghost"
-              className="h-7 px-2.5 text-[12px]"
-              onClick={() => setRevision(problem.id, problem.revisionStatus ?? 'needs-revision', interval.value)}
+              className="h-7 px-2.5 text-[11.5px]"
+              onClick={() =>
+                setRevision(problem.id, problem.revisionStatus ?? 'needs-revision', interval.value)
+              }
             >
               {interval.label}
             </Button>
@@ -97,7 +123,6 @@ export function RevisionPage() {
     )
   }
 
-
   return (
     <div className="space-y-8">
       <PageHeader
@@ -106,17 +131,21 @@ export function RevisionPage() {
         description="Revisit problems to strengthen your understanding"
       />
 
+      {/* Summary stat tiles */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatTile icon={Star} tone="amber" label="Important" value={important.length} sub="Flagged for keeps" />
-        <StatTile icon={RotateCcw} tone="sky" label="Needs revision" value={needsRevision.length} sub="In the loop" />
-        <StatTile icon={CircleCheck} tone="mint" label="Mastered" value={mastered.length} sub="Locked in" />
+        <StatTile icon={Star}        tone="amber" label="Important"      value={important.length}    sub="Flagged for keeps" />
+        <StatTile icon={RotateCcw}   tone="sky"   label="Needs revision" value={needsRevision.length} sub="In the loop" />
+        <StatTile icon={CircleCheck} tone="mint"  label="Mastered"       value={mastered.length}     sub="Locked in" />
       </div>
 
+      {/* Due for revision */}
       <section>
         <CardHeader>
           <div>
             <CardTitle>Due for revision</CardTitle>
-            <CardDescription>{dueProblems.length} problem{dueProblems.length === 1 ? '' : 's'} scheduled</CardDescription>
+            <CardDescription>
+              {dueProblems.length} problem{dueProblems.length === 1 ? '' : 's'} scheduled
+            </CardDescription>
           </div>
         </CardHeader>
         {dueProblems.length === 0 ? (
@@ -128,10 +157,11 @@ export function RevisionPage() {
             />
           </Card>
         ) : (
-          <div className="space-y-3">{dueProblems.map(p => renderProblem(p))}</div>
+          <div className="stagger space-y-3">{dueProblems.map(p => renderProblem(p))}</div>
         )}
       </section>
 
+      {/* Important */}
       {important.length > 0 && (
         <section>
           <CardHeader>
@@ -140,10 +170,11 @@ export function RevisionPage() {
               <CardDescription>Your starred, must-know problems</CardDescription>
             </div>
           </CardHeader>
-          <div className="space-y-3">{important.map(p => renderProblem(p))}</div>
+          <div className="stagger space-y-3">{important.map(p => renderProblem(p))}</div>
         </section>
       )}
 
+      {/* Mastered */}
       {mastered.length > 0 && (
         <section>
           <CardHeader>
@@ -152,7 +183,7 @@ export function RevisionPage() {
               <CardDescription>Solved confidently — archived from the queue</CardDescription>
             </div>
           </CardHeader>
-          <div className="space-y-3">{mastered.map(p => renderProblem(p, false))}</div>
+          <div className="stagger space-y-3">{mastered.map(p => renderProblem(p, false))}</div>
         </section>
       )}
     </div>

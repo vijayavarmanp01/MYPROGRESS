@@ -79,29 +79,28 @@ export function calculateStreak(dayRecords: Record<string, DayRecord>, _categori
   const isProductiveDay = (date: string): boolean => {
     const record = dayRecords[date]
     if (!record) return false
-    const completed = record.tasks.filter(t => t.completed).length
-    return completed > 0
+    return record.tasks.some(t => t.completed)
   }
 
-  // Calculate current streak (from today backwards)
+  // Calculate current streak
+  // Start from today; if today is not productive, start from yesterday
+  const todayDate = new Date(today + 'T00:00:00')
   let checkDate = today
-  while (true) {
-    if (isProductiveDay(checkDate)) {
-      current++
-      const d = new Date(checkDate + 'T00:00:00')
-      d.setDate(d.getDate() - 1)
-      checkDate = formatDate(d)
-    } else if (checkDate === today) {
-      // Allow today to not be done yet, check yesterday
-      const d = new Date(checkDate + 'T00:00:00')
-      d.setDate(d.getDate() - 1)
-      checkDate = formatDate(d)
-    } else {
-      break
-    }
+
+  if (!isProductiveDay(today)) {
+    // Today hasn't been completed yet — start streak from yesterday
+    todayDate.setDate(todayDate.getDate() - 1)
+    checkDate = formatDate(todayDate)
   }
 
-  // Calculate longest streak
+  while (isProductiveDay(checkDate)) {
+    current++
+    const d = new Date(checkDate + 'T00:00:00')
+    d.setDate(d.getDate() - 1)
+    checkDate = formatDate(d)
+  }
+
+  // Calculate longest streak across all recorded days
   const allDates = Object.keys(dayRecords).sort()
   for (const date of allDates) {
     if (isProductiveDay(date)) {

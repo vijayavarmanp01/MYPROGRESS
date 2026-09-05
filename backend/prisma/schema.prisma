@@ -1,0 +1,289 @@
+// Prisma schema file for MyProgress (DSA & Placement Command Center)
+// Database: MySQL (myprogressv1)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────────────────────
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum AuthProvider {
+  EMAIL
+  GOOGLE
+  GITHUB
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ProblemStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  SOLVED
+  REVISED
+}
+
+enum RevisionStatus {
+  IMPORTANT
+  NEEDS_REVISION
+  MASTERED
+}
+
+enum RevisionInterval {
+  TOMORROW
+  THREE_DAYS
+  ONE_WEEK
+  TWO_WEEKS
+  ONE_MONTH
+}
+
+enum TopicCategory {
+  DSA
+  SQL
+  LEETCODE
+  CORE_CS
+  SYSTEM_DESIGN
+  INTERVIEW_SKILLS
+}
+
+enum AchievementTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+  MYTHIC
+}
+
+// ─────────────────────────────────────────────────────────────
+// MODELS
+// ─────────────────────────────────────────────────────────────
+
+/// User account and profile identity
+model User {
+  id              String       @id @default(cuid())
+  email           String       @unique
+  passwordHash    String?
+  name            String
+  username        String       @unique
+  bio             String?      @db.Text
+  avatarInitial   String?      @db.VarChar(10)
+  avatarGradient  String?      @db.VarChar(100)
+  githubUrl       String?      @db.VarChar(255)
+  linkedinUrl     String?      @db.VarChar(255)
+  leetcodeUrl     String?      @db.VarChar(255)
+  targetRole      String?      @db.VarChar(150)
+  targetCompanies Json?
+  provider        AuthProvider @default(EMAIL)
+  role            Role         @default(USER)
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  // Relationships
+  progress         Progress?
+  userProblems     UserProblem[]
+  dailyTasks       DailyTask[]
+  revisions        Revision[]
+  userAchievements UserAchievement[]
+
+  @@index([email])
+  @@index([username])
+  @@map("users")
+}
+
+/// DSA, SQL, and Interview topics
+model Topic {
+  id                   String        @id @default(cuid())
+  name                 String        @db.VarChar(100)
+  slug                 String        @unique @db.VarChar(100)
+  icon                 String?       @db.VarChar(50)
+  category             TopicCategory @default(DSA)
+  order                Int           @default(0)
+  totalProblemsPlanned Int           @default(0)
+  description          String?       @db.Text
+
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  // Relationships
+  problems   Problem[]
+  dailyTasks DailyTask[]
+
+  @@index([category])
+  @@map("topics")
+}
+
+/// Problems repository
+model Problem {
+  id            String     @id @default(cuid())
+  topicId       String
+  topic         Topic      @relation(fields: [topicId], references: [id], onDelete: Cascade)
+  name          String     @db.VarChar(200)
+  slug          String?    @db.VarChar(200)
+  platform      String     @default("LeetCode") @db.VarChar(50)
+  problemNumber Int?
+  difficulty    Difficulty @default(MEDIUM)
+  url           String?    @db.VarChar(500)
+  patternTags   Json?
+  order         Int        @default(0)
+
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  // Relationships
+  userProblems UserProblem[]
+  revisions    Revision[]
+
+  @@index([topicId])
+  @@index([difficulty])
+  @@map("problems")
+}
+
+/// Per-user problem solving status, time, notes & solution
+model UserProblem {
+  id               String          @id @default(cuid())
+  userId           String
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId        String
+  problem          Problem         @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  status           ProblemStatus   @default(NOT_STARTED)
+  solvedAt         DateTime?
+  timeTakenMinutes Int?
+  notes            String?         @db.Text
+  codeSnippet      String?         @db.Text
+  revisionStatus   RevisionStatus?
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@unique([userId, problemId])
+  @@index([userId, status])
+  @@index([problemId])
+  @@map("user_problems")
+}
+
+/// Daily preparation checklist and tasks
+model DailyTask {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topicId          String?
+  topic            Topic?    @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  date             DateTime  @db.Date
+  title            String?   @db.VarChar(255)
+  completed        Boolean   @default(false)
+  problemsSolved   Int       @default(0)
+  problemsTarget   Int       @default(2)
+  timeSpentMinutes Int       @default(0)
+  notes            String?   @db.Text
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([userId, date])
+  @@index([topicId])
+  @@map("daily_tasks")
+}
+
+/// Aggregated user progress, study streaks, and study goals
+model Progress {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  currentStreak        Int       @default(0)
+  longestStreak        Int       @default(0)
+  lastActiveDate       DateTime? @db.Date
+  totalProblemsSolved  Int       @default(0)
+  totalTimeSpentMinutes Int      @default(0)
+  problemsMastered     Int       @default(0)
+  dailyGoalMinutes     Int       @default(60)
+  dailyGoalProblems    Int       @default(3)
+  weeklyGoalProblems   Int       @default(15)
+  overallReadinessPct  Float     @default(0)
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([userId])
+  @@map("progress")
+}
+
+/// Spaced repetition revision scheduling
+model Revision {
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  problemId     String
+  problem       Problem          @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  interval      RevisionInterval @default(ONE_WEEK)
+  revisionDate  DateTime         @db.Date
+  status        RevisionStatus   @default(NEEDS_REVISION)
+  revisionCount Int              @default(0)
+  lastRevisedAt DateTime?
+  notes         String?          @db.Text
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@unique([userId, problemId])
+  @@index([userId, revisionDate])
+  @@index([status])
+  @@map("revisions")
+}
+
+/// Achievements and badges catalog
+model Achievement {
+  id          String          @id @default(cuid())
+  slug        String          @unique @db.VarChar(100)
+  title       String          @db.VarChar(150)
+  description String          @db.Text
+  icon        String          @db.VarChar(50)
+  tier        AchievementTier @default(BRONZE)
+  targetValue Int             @default(1)
+  category    String?         @db.VarChar(50)
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  // Relationships
+  userAchievements UserAchievement[]
+
+  @@index([slug])
+  @@index([tier])
+  @@map("achievements")
+}
+
+/// User earned achievements and progress
+model UserAchievement {
+  id              String      @id @default(cuid())
+  userId          String
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId   String
+  achievement     Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+  currentProgress Int         @default(0)
+  unlocked        Boolean     @default(false)
+  unlockedAt      DateTime?
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  @@unique([userId, achievementId])
+  @@index([userId, unlocked])
+  @@index([achievementId])
+  @@map("user_achievements")
+}
